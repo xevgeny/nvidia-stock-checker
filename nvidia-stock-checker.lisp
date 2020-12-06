@@ -2,8 +2,12 @@
 
 ; queries DE store (locale=de-de), founders editions only
 (defvar url "https://api.nvidia.partners/edge/product/search?page=1&limit=9&locale=de-de&manufacturer=NVIDIA")
-
-(defvar show-alert? t)
+(defvar show-alert? nil)
+(defvar print-product-table? t)
+; checks availability in a loop
+(defvar loop? nil)
+; sleep interval in seconds, defaults to 5 minutes
+(defvar sleep-interval (* 5 60))
 
 ; WARNING: show-alert is platform specific!
 ; shows Mac OS alert using Apple Script
@@ -58,8 +62,14 @@
          (products (parse-json json-string))
          (by-title (sort products #'string-lessp :key #'product-title))
          (available-products (filter-out-of-stock products)))
-    (print-product-table by-title)
+    (if print-product-table? (print-product-table by-title))
     (if (and
           show-alert?
           (> (length available-products) 0))
       (show-alert available-products))))
+
+(defun main ()
+  (loop
+    (check-availability)
+    (when (not loop?) (return))
+    (sleep sleep-interval)))

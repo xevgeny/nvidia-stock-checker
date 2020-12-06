@@ -2,7 +2,7 @@
   :description "checks availability of nvidia's gpus"
   :build-operation "program-op"
   :build-pathname "nvidia-stock-checker"
-  :entry-point "nvidia-stock-checker:check-availability"
+  :entry-point "nvidia-stock-checker:main"
   :serial t
   :depends-on (#:dexador
                #:jsown
