@@ -1,6 +1,19 @@
 (in-package #:nvidia-stock-checker)
 
+; queries DE store (locale=de-de), founders editions only
 (defvar url "https://api.nvidia.partners/edge/product/search?page=1&limit=9&locale=de-de&manufacturer=NVIDIA")
+
+(defvar show-alert? t)
+
+; WARNING: show-alert is platform specific!
+; shows Mac OS alert using Apple Script
+; program execution stops unless alert is acknowledge by an user
+(defun show-alert (products)
+  (let* ((n-available (length products))
+         (name "nvidia-stock-checker")
+         (message (format nil "Found ~D available GPU(s)" n-available))
+         (command (format nil "osascript -e 'display alert \"~a\" message \"~a\"'" name message)))
+    (uiop:run-program command)))
 
 (defstruct (product (:constructor create-product (title price status)))
   title
@@ -32,11 +45,21 @@
 
 (defun print-product-table (products)
   (let ((table (ascii-table:make-table '("title" "price" "status"))))
-    (mapcar #'(lambda (p) (ascii-table:add-row table (product-to-list p))) products)
+    (mapcar (lambda (p) (ascii-table:add-row table (product-to-list p))) products)
     (ascii-table:display table)))
+
+(defun filter-out-of-stock (products)
+  (remove-if
+    (lambda (p) (string= (product-status p) "out_of_stock"))
+    products))
 
 (defun check-availability ()
   (let* ((json-string (get-products url))
          (products (parse-json json-string))
-         (by-title (sort products #'string-lessp :key #'product-title)))
-    (print-product-table by-title)))
+         (by-title (sort products #'string-lessp :key #'product-title))
+         (available-products (filter-out-of-stock products)))
+    (print-product-table by-title)
+    (if (and
+          show-alert?
+          (> (length available-products) 0))
+      (show-alert available-products))))
